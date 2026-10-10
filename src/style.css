@@ -815,3 +815,379 @@ footer {
     display: none;
   }
 }
+/* NEO-HAVEN: road network, dimensional architecture and live operators. */
+.city {
+  background: #060d18;
+  isolation: isolate;
+}
+.city .city-title {
+  font-size: 20px;
+  letter-spacing: 6px;
+  fill: #afccd9;
+}
+.city .city-caption {
+  font-size: 10px;
+  letter-spacing: 2px;
+  fill: #7697ac;
+}
+.city .road-bed {
+  stroke: #07111b;
+  stroke-width: 24;
+  fill: none;
+}
+.city .road {
+  stroke: #377387;
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 6 7;
+  filter: drop-shadow(0 0 5px #50d4e755);
+}
+.city .road-danger {
+  stroke: #fc567a;
+  animation: flow 8s linear infinite;
+}
+.district {
+  cursor: pointer;
+  outline: none;
+  --district: #62f4de;
+}
+.structure {
+  fill: #102638;
+  stroke: var(--district);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 8px 10px #0009);
+}
+.structure .foundation {
+  fill: #102131;
+  stroke: #365364;
+}
+.structure .roof {
+  fill: #244456;
+  stroke: var(--district);
+}
+.structure .light {
+  fill: none;
+  stroke: var(--district);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px var(--district));
+}
+.structure .beacon {
+  fill: var(--district);
+  animation: pulse 2s infinite;
+}
+.structure .radio,
+.structure .steam {
+  fill: none;
+  stroke: var(--district);
+  opacity: 0.5;
+  stroke-width: 2;
+  animation: pulse 3s infinite;
+}
+.structure .radar {
+  fill: #90b4ff18;
+  stroke: #90b4ff55;
+}
+.city .district-ring {
+  fill: #15394b33;
+  stroke: #35627555;
+  stroke-width: 2;
+}
+.city .chosen .district-ring,
+.city .district:focus-visible .district-ring {
+  stroke: white;
+  stroke-dasharray: 5 5;
+  fill: #76daff15;
+}
+.city .compromised {
+  --district: #ff567b !important;
+}
+.city .compromised .roof {
+  fill: #502334;
+}
+.city .protected .district-ring {
+  stroke: #ffd17c;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 8px #ffd17c88);
+}
+.city .district-name {
+  font-size: 13px;
+  letter-spacing: 1px;
+  fill: #e5f6ff;
+  paint-order: stroke;
+  stroke: #07111b;
+  stroke-width: 5px;
+}
+.city .district-meta {
+  font-size: 9px;
+  letter-spacing: 1px;
+  fill: var(--district);
+  paint-order: stroke;
+  stroke: #07111b;
+  stroke-width: 4px;
+}
+.city .agent-name {
+  font-size: 11px;
+  fill: white;
+  paint-order: stroke;
+  stroke: #060d18;
+  stroke-width: 4px;
+}
+.city .threat-ring {
+  fill: none;
+  stroke: #ff567b;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  animation: pulse 0.7s infinite;
+}
+.city .threat-label {
+  font-size: 12px;
+  fill: #ff7897;
+  paint-order: stroke;
+  stroke: #060d18;
+  stroke-width: 4px;
+}
+.walking > path {
+  animation: stride 0.25s infinite alternate;
+}
+@keyframes stride {
+  to {
+    transform: translateY(-2px);
+  }
+}
+.core-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: #091721;
+  font: 10px monospace;
+  letter-spacing: 1px;
+}
+.core-bar strong {
+  font-size: 25px;
+  color: #62f4de;
+}
+.core-bar meter {
+  flex: 1;
+  min-width: 80px;
+  height: 12px;
+  accent-color: #62f4de;
+}
+.core-bar small {
+  font-size: 9px;
+  color: #a1becb;
+}
+.interior-art {
+  height: 94px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 14px 16px;
+  background: repeating-linear-gradient(
+    90deg,
+    #0b1a29 0 24px,
+    #122b3a 25px 26px
+  );
+  border: 1px solid #284757;
+  margin: 16px 0;
+  transform: skewY(-3deg);
+}
+.interior-art span {
+  flex: 1;
+  border: 1px solid #69dfff;
+  background: repeating-linear-gradient(0deg, #19394c 0 7px, #69dfff 8px 9px);
+  box-shadow: 0 0 8px #69dfff33;
+}
+.interior-1 .interior-art span {
+  border-radius: 50% 50% 10% 10%;
+  border-color: #ffd17c;
+  background: linear-gradient(#ffd17c33, #ffd17c);
+}
+.interior-2 .interior-art span {
+  border-color: #c09aff;
+  background: #c09aff33;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.interior-3 .interior-art span {
+  border-color: #6bf0c7;
+  background: #6bf0c733;
+}
+.interior-4 .interior-art span {
+  border-radius: 50%;
+  background: radial-gradient(#90b4ff, #132238 50%);
+}
+.interior-5 .interior-art span {
+  background: linear-gradient(#e6faff, #246073);
+}
+.travel-notice {
+  margin: 12px 0;
+  padding: 10px;
+  border-left: 2px solid #ffd17c;
+  color: #ffd17c !important;
+}
+.mini-task {
+  margin-top: 18px;
+  border-top: 1px solid #355064;
+  padding-top: 16px;
+}
+.mini-task p {
+  margin: 10px 0;
+}
+.task-cells {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.task-cells button {
+  justify-content: center;
+  min-height: 47px;
+  font: 16px monospace;
+}
+.task-cells .bad-cell {
+  background: #481d32;
+  color: #ff9db4;
+  border-color: #ff567b;
+}
+.task-cells .done-cell {
+  background: #164538;
+  color: #8affd5;
+  opacity: 1;
+}
+.chat {
+  margin-top: 18px;
+  padding: 20px;
+}
+.messages {
+  max-height: 150px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 15px;
+  font: 12px/1.6 monospace;
+  color: #9bb3c5;
+  overflow-wrap: anywhere;
+}
+.messages b {
+  color: #62f4de;
+}
+.chat form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.chat input {
+  margin: 0;
+  min-width: 0;
+  padding: 12px;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.chat button {
+  width: auto;
+  white-space: nowrap;
+}
+.hero-network {
+  width: 520px;
+  opacity: 0.75;
+  right: -90px;
+  bottom: -45px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+@media (max-width: 720px) {
+  .game-grid aside {
+    display: flex;
+    flex-direction: column;
+  }
+  .identity {
+    padding: 16px;
+  }
+  .identity h2 {
+    display: inline-block;
+    margin-right: 15px;
+  }
+  .identity .chip {
+    margin-left: 12px;
+  }
+  .city .district-name {
+    font-size: 17px;
+    letter-spacing: 0;
+  }
+  .city .district-meta {
+    font-size: 12px;
+  }
+  .city .agent-name {
+    font-size: 14px;
+  }
+  .hero-network {
+    width: 370px;
+    right: -20px;
+  }
+  .core-bar {
+    padding: 12px;
+    gap: 9px;
+  }
+  .core-bar small {
+    width: 100%;
+  }
+  .chat {
+    padding: 14px;
+  }
+  .map svg {
+    min-height: 0;
+  }
+  .interior-art {
+    height: 70px;
+  }
+  .city .city-caption {
+    font-size: 11px;
+  }
+}
+.city .agent-name {
+  visibility: hidden;
+}
+.city .own-agent .agent-name,
+.city .agent:hover .agent-name {
+  visibility: visible;
+}
+.district-controls {
+  display: none;
+}
+@media (max-width: 720px) {
+  .district-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid #20313e;
+  }
+  .district-controls button {
+    min-height: 52px;
+    display: block;
+    text-align: left;
+    padding: 10px;
+    font-size: 10px;
+    letter-spacing: 0.3px;
+  }
+  .district-controls small {
+    display: block;
+    margin-top: 5px;
+    color: #83a3b6;
+    font-size: 9px;
+  }
+  .district-controls .active {
+    border-color: #62f4de;
+  }
+  .map .city {
+    min-height: 285px;
+  }
+  .city .city-caption {
+    display: none;
+  }
+}

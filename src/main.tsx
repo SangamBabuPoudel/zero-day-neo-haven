@@ -2,32 +2,28 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
 import "./style.css";
+import { City } from "./City";
+import { buildings } from "../shared/city";
+import { Interior, Chat } from "./Interior";
 const socket = io();
-const points = Array.from({ length: 20 }, (_, i) => {
-  const angle = (i * Math.PI) / 10 - Math.PI / 2;
-  const radius = i % 2 ? 245 : 180;
-  return {
-    x: 400 + Math.cos(angle) * radius,
-    y: 310 + Math.sin(angle) * radius,
-  };
-});
-const edges = Array.from({ length: 20 }, (_, i) => [i, (i + 1) % 20]).concat(
-  Array.from({ length: 10 }, (_, i) => [i, i + 10]),
-);
 function App() {
   const [r, setR] = useState<any>(null),
     [name, setName] = useState(""),
     [code, setCode] = useState(""),
     [error, setError] = useState(""),
-    [selected, setSelected] = useState(2),
+    [selected, setSelected] = useState(5),
     [connected, setConnected] = useState(socket.connected),
     [boot, setBoot] = useState(true),
     [now, setNow] = useState(Date.now()),
-    [sound, setSound] = useState(false);
+    [sound, setSound] = useState(false),
+    [offset, setOffset] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setBoot(false), 1500);
-    const clock = setInterval(() => setNow(Date.now()), 200);
-    socket.on("state", setR);
+    const clock = setInterval(() => setNow(Date.now()), 40);
+    socket.on("state", (state: any) => {
+      setOffset(state.serverNow - Date.now());
+      setR(state);
+    });
     socket.on("connect", () => {
       setConnected(true);
       const token = sessionStorage.getItem("zero-token");
@@ -68,13 +64,16 @@ function App() {
             g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + 0.15);
             o.start();
             o.stop(a.currentTime + 0.15);
+            o.onended = () => {
+              void a.close();
+            };
           } catch {}
         }
       });
   }
-  const serverTime = now + (r ? r.serverNow - Date.now() : 0),
-    cool = r ? Math.max(0, Math.ceil((r.me.next - serverTime) / 1000)) : 0;
-  const host = r?.host === r?.me.id;
+  const serverTime = now + offset;
+  const cityTime = r?.phase === "meeting" ? r.meeting.ends - 35000 : serverTime;
+  const host = r?.host === r?.me?.id;
   const infected = r?.nodes.filter((n: any) => n.infected).length || 0;
   return (
     <>
@@ -115,41 +114,18 @@ function App() {
               <em>PATCH EVERYTHING.</em>
             </p>
             <p className="intro">
-              Your network is under attack.
+              NEO-HAVEN is under attack.
               <br />
               One of your teammates is the threat.
             </p>
             <div className="hero-network">
-              <svg viewBox="0 0 800 620">
-                {edges.map(([a, b], i) => (
-                  <line
-                    key={i}
-                    x1={points[a].x}
-                    y1={points[a].y}
-                    x2={points[b].x}
-                    y2={points[b].y}
-                  />
-                ))}
-                {points.map((p, i) => (
-                  <circle
-                    className={i % 5 === 0 ? "bad" : ""}
-                    key={i}
-                    cx={p.x}
-                    cy={p.y}
-                    r="7"
-                  />
-                ))}
-                <circle className="core-ring" cx="400" cy="310" r="58" />
-                <text x="400" y="316" textAnchor="middle">
-                  ZØ
-                </text>
-              </svg>
+              <City now={now} />
             </div>
           </div>
           <section className="access panel">
             <div className="eyebrow">01 / ACCESS TERMINAL</div>
             <h2>Enter the mainframe.</h2>
-            <p>3–8 operators. One hidden Mole. Four minutes.</p>
+            <p>3–8 operators. One hidden Mole. Five-minute lockdown.</p>
             <label>
               OPERATOR CALLSIGN
               <input
@@ -185,9 +161,9 @@ function App() {
             <div className="brief">
               <b>MISSION BRIEF</b>
               <p>
-                Repair infected nodes. Shield your infrastructure. Scan for
-                anomalies. Call a meeting when you suspect the Mole. Clear the
-                network for 12 seconds to stabilize it.
+                Travel to districts. Complete quick terminal tasks to repair,
+                shield, or audit. Compare access histories in chat to expose the
+                Mole. Hold five minutes, then clear the city for 12 seconds.
               </p>
             </div>
           </section>
@@ -265,9 +241,12 @@ function App() {
                   ],
                   [
                     "FIREWALL",
-                    "Shield a node for 18 seconds. Stop incoming infection.",
+                    "Shield a district for 24 seconds. Stop incoming infection.",
                   ],
-                  ["SNIFFER", "Scan for infection and suspicious activity."],
+                  [
+                    "SNIFFER",
+                    "Audit real visits and operations. Connect failures to evidence.",
+                  ],
                 ].map(([a, b]) => (
                   <article key={a}>
                     <h3>{a}</h3>
@@ -276,13 +255,15 @@ function App() {
                 ))}
                 <p>
                   Every specialist can repair. The Mole wears a specialist
-                  identity and secretly infects nodes. A majority vote
+                  identity and plants delayed corruption. A majority vote
                   identifies the suspect; a false accusation costs 20 integrity.
                 </p>
                 <p>
-                  Infection pulses every 7 seconds. Stabilize a clean network
-                  for 12 seconds, or catch the Mole. Survive the four-minute
-                  deadline.
+                  Select a district to travel (2–5 seconds), then use its
+                  terminal. Red packets are incoming attacks. Hold until the
+                  uplink seals at five minutes, then keep all six districts
+                  clean for 12 seconds before the six-minute deadline. Catch the
+                  Mole early with a majority vote.
                 </p>
               </section>
             </div>
@@ -292,110 +273,67 @@ function App() {
                 <section className="map panel">
                   <div className="map-header">
                     <span>
-                      NETWORK TOPOLOGY <b>LIVE</b>
+                      NEO-HAVEN / CITY LINK <b>LIVE</b>
                     </span>
-                    <span className="red">{infected} / 20 COMPROMISED</span>
+                    <span className="red">{infected} / 6 COMPROMISED</span>
                   </div>
-                  <svg
-                    viewBox="0 0 800 620"
-                    role="img"
-                    aria-label="Interactive network map"
+                  <div className="core-bar">
+                    <span>CORE INTEGRITY</span>
+                    <strong className={r.core < 35 ? "red" : ""}>
+                      {r.core}%
+                    </strong>
+                    <meter min="0" max="100" value={r.core} />
+                    <small>
+                      {serverTime < r.secureAt
+                        ? `UPLINK SEALS IN ${Math.ceil((r.secureAt - serverTime) / 1000)}s`
+                        : "UPLINK SEALED / CLEAR THE CITY"}
+                    </small>
+                  </div>
+                  <City
+                    room={r}
+                    now={cityTime}
+                    selected={selected}
+                    onSelect={(node) => {
+                      setSelected(node);
+                      if (
+                        r.phase === "playing" &&
+                        !r.me.spectator &&
+                        !r.me.travel &&
+                        r.me.location !== node
+                      )
+                        cmd("travel", { node });
+                    }}
+                  />
+                  <div
+                    className="district-controls"
+                    aria-label="District travel controls"
                   >
-                    {edges.map(([a, b], i) => {
-                      const bad = r.nodes[a]?.infected || r.nodes[b]?.infected;
-                      return (
-                        <g key={i}>
-                          <line
-                            className={bad ? "infected-line" : ""}
-                            x1={points[a].x}
-                            y1={points[a].y}
-                            x2={points[b].x}
-                            y2={points[b].y}
-                          />
-                          {bad && (
-                            <circle r="3" className="packet">
-                              <animateMotion
-                                dur={`${3 + (i % 3)}s`}
-                                repeatCount="indefinite"
-                                path={`M ${points[a].x} ${points[a].y} L ${points[b].x} ${points[b].y}`}
-                              />
-                            </circle>
-                          )}
-                        </g>
-                      );
-                    })}
-                    <circle className="core-halo" cx="400" cy="310" r="83" />
-                    <circle className="core-track" cx="400" cy="310" r="65" />
-                    <circle
-                      className="core-ring"
-                      style={{
-                        strokeDasharray: `${r.core * 4.084} 408.4`,
-                        stroke: r.core < 35 ? "#ff4965" : "#62f4de",
-                      }}
-                      cx="400"
-                      cy="310"
-                      r="65"
-                    />
-                    <text
-                      className="integrity"
-                      x="400"
-                      y="310"
-                      textAnchor="middle"
-                    >
-                      {r.core}
-                      <tspan className="percent">%</tspan>
-                    </text>
-                    <text
-                      className="core-label"
-                      x="400"
-                      y="336"
-                      textAnchor="middle"
-                    >
-                      MAINFRAME CORE
-                    </text>
-                    {r.nodes.map((n: any) => {
-                      const p = points[n.id];
-                      return (
-                        <g
-                          key={n.id}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={`${n.name} ${n.infected ? "infected" : "clean"}`}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ")
-                              setSelected(n.id);
-                          }}
-                          onClick={() => setSelected(n.id)}
-                          className={`node ${n.infected ? "infected" : ""} ${n.shield > serverTime ? "shielded" : ""} ${selected === n.id ? "selected" : ""}`}
-                        >
-                          <circle
-                            className="node-aura"
-                            cx={p.x}
-                            cy={p.y}
-                            r="25"
-                          />
-                          <rect
-                            x={p.x - 13}
-                            y={p.y - 13}
-                            width="26"
-                            height="26"
-                            rx="6"
-                          />
-                          <text x={p.x} y={p.y + 5} textAnchor="middle">
-                            {["▤", "⌁", "◉", "✧", "▥", "ϟ"][n.id % 6]}
-                          </text>
-                          <text
-                            className="node-label"
-                            x={p.x}
-                            y={p.y + 36}
-                            textAnchor="middle"
-                          >
-                            {n.name}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
+                    {buildings.map((b) => (
+                      <button
+                        key={b.id}
+                        className={selected === b.id ? "active" : ""}
+                        disabled={
+                          r.phase !== "playing" ||
+                          r.me.spectator ||
+                          !!r.me.travel
+                        }
+                        onClick={() => {
+                          setSelected(b.id);
+                          if (r.me.location !== b.id)
+                            cmd("travel", { node: b.id });
+                        }}
+                      >
+                        <span>{b.name}</span>
+                        <small className={r.nodes[b.id].infected ? "red" : ""}>
+                          {r.me.location === b.id
+                            ? "YOU ARE HERE"
+                            : r.nodes[b.id].infected
+                              ? "⚠ INFECTED"
+                              : "◇ SECURE"}
+                        </small>
+                      </button>
+                    ))}
+                  </div>
                   <div className="map-footer">
                     <span>● CLEAN</span>
                     <span className="red">● INFECTED</span>
@@ -403,7 +341,7 @@ function App() {
                     <span>
                       {r.cleanAt
                         ? "STABILIZING // HOLD FOR 12s"
-                        : "SELECT A NODE TO INTERACT"}
+                        : "SELECT A DISTRICT TO TRAVEL"}
                     </span>
                   </div>
                 </section>
@@ -411,7 +349,11 @@ function App() {
                   <section className="panel identity">
                     <div className="eyebrow">YOUR ASSIGNMENT / PRIVATE</div>
                     <h2 className={r.me.mole ? "red" : ""}>
-                      {r.me.mole ? "THE MOLE" : r.me.role}
+                      {r.me.spectator
+                        ? "SPECTATOR"
+                        : r.me.mole
+                          ? "THE MOLE"
+                          : r.me.role}
                     </h2>
                     <p>
                       {r.me.mole
@@ -420,59 +362,12 @@ function App() {
                     </p>
                     <span className="chip">COVER: {r.me.role}</span>
                   </section>
-                  <section className="panel actions">
-                    <div className="eyebrow">TARGET LOCKED</div>
-                    <h3>{r.nodes[selected]?.name}</h3>
-                    <p className={r.nodes[selected]?.infected ? "red" : ""}>
-                      {r.nodes[selected]?.infected ? "COMPROMISED" : "SECURE"}{" "}
-                      {r.nodes[selected]?.shield > serverTime
-                        ? " / SHIELDED"
-                        : ""}
-                    </p>
-                    <button
-                      className="primary"
-                      disabled={cool > 0 || r.phase !== "playing"}
-                      onClick={() => cmd("repair", { node: selected })}
-                    >
-                      PATCH NODE <span>{cool ? `${cool}s` : "↗"}</span>
-                    </button>
-                    {r.me.role !== "PATCHER" && (
-                      <button
-                        disabled={cool > 0 || r.phase !== "playing"}
-                        onClick={() =>
-                          cmd(r.me.role === "FIREWALL" ? "shield" : "scan", {
-                            node: selected,
-                          })
-                        }
-                      >
-                        {r.me.role === "FIREWALL"
-                          ? "DEPLOY SHIELD"
-                          : "SCAN NODE"}
-                      </button>
-                    )}
-                    {r.me.scan && <p className="scan-result">{r.me.scan}</p>}
-                    {r.me.mole && (
-                      <button
-                        className="danger"
-                        disabled={cool > 0 || r.phase !== "playing"}
-                        onClick={() => cmd("sabotage", { node: selected })}
-                      >
-                        INJECT INFECTION
-                      </button>
-                    )}
-                    <button
-                      className="meeting-button"
-                      disabled={
-                        r.phase !== "playing" || r.me.meetingNext > serverTime
-                      }
-                      onClick={() => cmd("meeting")}
-                    >
-                      ⚠ EMERGENCY MEETING{" "}
-                      {r.me.meetingNext > serverTime
-                        ? `(${Math.ceil((r.me.meetingNext - serverTime) / 1000)}s)`
-                        : ""}
-                    </button>
-                  </section>
+                  <Interior
+                    r={r}
+                    selected={selected}
+                    now={cityTime}
+                    cmd={cmd}
+                  />
                   <section className="panel feed">
                     <div className="eyebrow">SECURITY EVENT STREAM</div>
                     {r.events.slice(0, 7).map((v: string, i: number) => (
@@ -484,12 +379,19 @@ function App() {
                   </section>
                 </aside>
               </div>
+              <Chat r={r} cmd={cmd} />
               <div className="team-strip">
                 {r.players.map((p: any) => (
                   <span key={p.id}>
                     <i className={p.connected ? "online" : ""} />
                     {p.name}
-                    <small>{p.role}</small>
+                    <small>
+                      {p.spectator
+                        ? "SPECTATOR"
+                        : p.travel
+                          ? "IN TRANSIT"
+                          : buildings[p.location]?.name}
+                    </small>
                   </span>
                 ))}
               </div>
@@ -503,18 +405,22 @@ function App() {
                 </div>
                 <h2>There’s a Mole among us.</h2>
                 <p>
-                  {r.meeting.caller} called an emergency meeting. Discuss in
-                  your voice call; select your suspect.
+                  {r.meeting.caller} called an emergency meeting. Compare access
+                  histories in team chat, then select your suspect.
                 </p>
+                <Chat r={r} cmd={cmd} />
                 <div className="vote-clock">
                   {Math.max(0, Math.ceil((r.meeting.ends - serverTime) / 1000))}
                   s
                 </div>
                 {r.players
-                  .filter((p: any) => p.connected)
+                  .filter((p: any) => r.meeting.eligible.includes(p.id))
                   .map((p: any) => (
                     <button
-                      disabled={r.meeting.voted.includes(r.me.id)}
+                      disabled={
+                        !r.meeting.eligible.includes(r.me.id) ||
+                        r.meeting.voted.includes(r.me.id)
+                      }
                       key={p.id}
                       onClick={() => cmd("vote", { target: p.id })}
                     >
@@ -523,7 +429,10 @@ function App() {
                     </button>
                   ))}
                 <button
-                  disabled={r.meeting.voted.includes(r.me.id)}
+                  disabled={
+                    !r.meeting.eligible.includes(r.me.id) ||
+                    r.meeting.voted.includes(r.me.id)
+                  }
                   onClick={() => cmd("vote", { target: "skip" })}
                 >
                   SKIP VOTE

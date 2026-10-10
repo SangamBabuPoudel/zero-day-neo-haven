@@ -1,32 +1,51 @@
 # ZERO DAY — Mole in the Mainframe
 
-Real-time 3–8 player social deduction game. React / TypeScript / Vite / Tailwind / Express / Socket.IO. Fictional cybersecurity mechanics only.
+**TRUST NO ONE. PATCH EVERYTHING.** A real-time, 3–8 player social-deduction game set in NEO-HAVEN. React / TypeScript / Vite / Express / Socket.IO. All cyber mechanics are fictional game rules.
 
-## Local play
+## Run locally
 
-Node 22 or newer.
+Node 22 or newer. From this directory:
 
-```
+```sh
 npm ci
 npm run build
 npm start
 ```
 
-Open http://localhost:3000. Open three independent tabs (each tab has its own session), create a room and join with its code. Development: run `npm run dev` and `npm run client` in two terminals; open Vite's URL. `npm test` runs authoritative-engine and live Socket.IO integration checks.
+Open http://localhost:3000 in three independent browser tabs or contexts. Create an operation and share its code. Session credentials are kept in sessionStorage; duplicate-tab session copies may require a fresh tab. Development: `npm run dev` and `npm run client` in separate terminals, then use Vite's URL. `npm test` runs engine and live multiplayer tests; the latter starts a local server on port 3199 and requires local listening permission.
 
-## Deploy today on Render
+## How to play
 
-1. Extract this project, create a GitHub repository, and push the source (exclude node_modules).
-2. In Render, create a Blueprint from that repository; `render.yaml` creates one Node web service. Alternatively create a Web Service: build `npm ci && npm run build`, start `npm start`, health endpoint `/health`, Node 22.
-3. Use a paid always-on instance for the competition to avoid cold starts. Hosting costs are your responsibility.
-4. Render supplies PORT automatically. No secrets, database, or external API required. The service serves frontend and Socket.IO on one origin.
-5. Share the resulting HTTPS URL with three people on different devices; create one room, join it, start, confirm changing nodes match, complete a vote, and replay. This real-device public smoke test remains required until actually performed.
+1. Select a building to travel along the glowing roads (2–5 seconds). All agents start at the Core. Actions require server-confirmed arrival.
+2. Use the building terminal: reconnect three circuit ports in order, or isolate three corrupted data blocks. Commit your operation. Every defender can repair; Patcher repairs faster and restores more integrity.
+3. Firewall deploys shields; Sniffer audits the last 90 seconds of recorded visits and operations. Share evidence in room chat.
+4. Red packets warn of incoming infections. Power infection accelerates attacks; Data doubles pulse damage; Core increases damage; Comms hides threat destinations; Surveillance shortens warnings; Security halves shield duration.
+5. Exactly one operator is secretly the Mole, with a normal specialist cover. CORRUPT makes a building look healthy, then triggers a failure 10 seconds later. Repair can clear it; a shield can block it. Corruption has a separate 30-second cooldown. Service logs do not identify which action was corruption: compare who visited before a failure.
+6. Emergency meetings pause city timers for up to 35 seconds. Use chat and vote. A strict majority identifying the Mole wins; an innocent majority costs 20 Core integrity. Ties and skips resume play. Each caller has a 90-second meeting cooldown.
+7. Defenders can also win by holding until the uplink seals at five minutes, then maintaining a clean city for 12 seconds. Core collapse or the six-minute deadline gives the Mole victory. Meetings extend the round. A decisive vote can end a round early. Host can replay after the full role reveal.
 
-## Rules
+Late joiners observe as spectators (up to eight total room members); they cannot act, vote or send round chat. They join the next round. Reconnect uses private random credentials, never callsigns. Duplicate callsigns within a room are rejected to keep evidence legible.
 
-Exactly one private Mole; role repeats Patcher/Firewall/Sniffer. Any player can repair (Patcher 3.5s, others 6.5s). Firewall shields 18s with 9s cooldown; Sniffer scans with 4.5s cooldown. Mole sabotage infects an unshielded node with 18s cooldown. All abilities share one cooldown per player. Scans report node state, never player allegiance. Sabotage is generic in the public event stream.
-Every 7 seconds infection reaches up to two neighboring unshielded nodes and damages core. Clear every node and hold clean for 12 seconds to win. Catch the Mole by a strict majority to win. Wrong majority costs 20 integrity, no innocent is expelled. Skips/ties resume without a penalty. Meetings last up to 20 seconds, pause infection and mission time; each operator can call one per 60 seconds. Mainframe collapse or four-minute deadline gives Mole victory. Discuss using an external voice call; no built-in chat. Host controls start/replay.
+## Production deployment
 
-## Limitations
+The existing `render.yaml` configures one Node web service, with a production build and `/health` check. Push **this directory** as the repository root and select the Blueprint in Render. If you place it inside a larger repository, set the service root directory to `zero-day`. Equivalent Node hosts can run:
 
-In-memory rooms disappear on restart/deploy. Run exactly ONE instance: multiple instances need a shared store/adapter and persistent game coordination. Disconnects retain private reconnect tokens in sessionStorage for 10 minutes when everyone leaves; host transfers to a connected operator. A disconnected Mole remains assigned and can reconnect. No accounts, persistent statistics, or chat. Event feed displays claims as game events, not evidence of allegiance. Balance is initial tuning and needs human playtesting. Client clocks are corrected against server snapshots; the server decides all outcomes. Tokens are bearer credentials: do not share them. Basic packet throttling and payload limits are included; production abuse protection is limited. Competition eligibility and rules have not been independently verified.
+- Build: `npm ci && npm run build`
+- Start: `npm start`
+- Health check: `/health`
+- Node: 22+, host supplies `PORT`
+
+The server serves the production frontend and Socket.IO from the same origin. No application secrets or external APIs are required. No public deployment has been performed by this task. After deployment, test three independent devices on the actual HTTPS URL, including chat, movement, terminal tasks, voting, reconnect, and replay.
+
+## Architecture and limits
+
+- `shared/city.ts`: six districts, road graph, shortest paths and visual interpolation.
+- `server/game.ts`: authoritative game state, private views, travel, tasks, infection, evidence, meetings and victory.
+- `server/index.ts`: room/session lifecycle, Socket.IO commands, static hosting and periodic ticks.
+- `src/City.tsx`: layered SVG architecture, roads, packets and visible agents.
+- `src/Interior.tsx`: reusable terminal tasks and team chat.
+- `src/main.tsx`, `src/style.css`: lobby, boot sequence, round interface, reveal, audio and responsive styling.
+
+Run exactly **one server instance**. Rooms, chat and bearer credentials live in memory and disappear on restart. Empty rooms expire after ten minutes. A disconnected player remains in a running round and can reconnect; host transfers to another connected operator. Meetings keep their original voter set so disconnects cannot lower the majority threshold. The map hides specialist roles and allegiance until the reveal; each player's own assignment and audit results are private.
+
+This build has bounded messages, basic command throttling and server validation, but no account system or durable multiplayer state. Three-to-eight-player balance needs real human playtesting. Automated gameplay checks are described in `VERIFICATION.md`.
