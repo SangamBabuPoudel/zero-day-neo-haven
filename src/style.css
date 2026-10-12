@@ -1191,3 +1191,216 @@ a:focus-visible {
     display: none;
   }
 }
+/* Shared emergencies expose presence; instructions remain private. */
+.city .agent-name {
+  visibility: visible;
+  font-size: 10px;
+}
+.reactor {
+  margin-bottom: 20px;
+  padding: 22px;
+  border-color: #df7550;
+  background: linear-gradient(110deg, #361b24, #111c2c);
+}
+.reactor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.reactor-heading h3 {
+  font: 24px monospace;
+  letter-spacing: 2px;
+  color: #ffd17c;
+  margin-top: 10px;
+}
+.reactor-heading strong {
+  font: 42px monospace;
+  color: #ff7897;
+}
+.reactor p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #c8bcc9;
+  margin: 12px 0;
+}
+.reactor b {
+  color: #fff;
+}
+.reactor small {
+  display: block;
+  margin-top: 12px;
+  color: #b29baf;
+  font: 11px/1.6 monospace;
+}
+.reactor-crew {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font: 10px monospace;
+  color: #9aa8ba;
+  margin: 16px 0;
+}
+.reactor-crew b {
+  margin-left: 10px;
+  color: #ffd17c;
+}
+.reactor-switches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 15px 0;
+}
+.reactor-switches button {
+  min-height: 68px;
+  justify-content: center;
+  font: 30px monospace;
+  border-color: #ffd17c;
+  color: #ffd17c;
+  background: #222536;
+}
+.reactor-panel {
+  padding: 16px;
+  background: #070d19aa;
+  border: 1px solid #735c50;
+  margin-top: 16px;
+}
+.private-intel {
+  padding: 20px;
+  background: #092e30;
+  border: 1px solid #62f4de;
+  margin: 15px 0;
+}
+.shutdown-sequence {
+  font: 38px monospace;
+  color: #62f4de;
+  margin: 15px 0;
+  letter-spacing: 8px;
+}
+.crisis-routes {
+  display: flex;
+  gap: 10px;
+}
+.override-button {
+  border-color: #aa7a40;
+  color: #ffd17c;
+  margin-top: 14px;
+}
+.reactor-resolved {
+  border-color: #395366;
+  background: #10212b;
+}
+.reactor-resolved .reactor-heading h3 {
+  font-size: 18px;
+  color: #91e6d8;
+}
+.evidence {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.evidence h3 {
+  font: 14px monospace;
+  color: #69dfff;
+  margin: 10px 0;
+}
+.evidence p {
+  font: 11px/1.6 monospace;
+  color: #99afbf;
+}
+.evidence ol {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0 0;
+  max-height: 250px;
+  overflow: auto;
+}
+.evidence li {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-left: 2px solid #456e8d;
+  padding: 4px 12px 14px;
+  font: 11px/1.5 monospace;
+  color: #a4bac9;
+}
+.evidence time {
+  font-size: 9px;
+  color: #718b9d;
+}
+.evidence b {
+  color: #83d4ef;
+}
+.quick-chat {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.quick-chat button {
+  width: auto;
+  font-size: 9px;
+  padding: 10px;
+  min-height: 40px;
+}
+.how-to {
+  margin: 18px 0;
+  padding: 14px 18px;
+  font: 11px/1.7 monospace;
+  color: #a1bacb;
+}
+.how-to summary {
+  cursor: pointer;
+  color: #62f4de;
+  letter-spacing: 1px;
+}
+.how-to ol {
+  padding-left: 20px;
+  margin-top: 16px;
+}
+.how-to li {
+  padding: 6px 0;
+}
+.how-to b {
+  color: #e1f1f9;
+}
+@media (max-width: 720px) {
+  .reactor {
+    padding: 16px;
+  }
+  .reactor-heading h3 {
+    font-size: 18px;
+  }
+  .reactor-heading strong {
+    font-size: 32px;
+  }
+  .reactor-heading .eyebrow {
+    font-size: 8px;
+  }
+  .reactor-switches {
+    gap: 8px;
+  }
+  .reactor-switches button {
+    min-height: 60px;
+  }
+  .shutdown-sequence {
+    font-size: 30px;
+    letter-spacing: 3px;
+  }
+  .city .agent-name {
+    font-size: 13px;
+  }
+  .quick-chat button {
+    font-size: 8px;
+  }
+  .reactor-crew {
+    gap: 10px;
+  }
+  .evidence {
+    padding: 15px;
+  }
+}
+
+.reactor + .chat {
+  margin: 0 0 20px;
+  border-color: #6b6750;
+}

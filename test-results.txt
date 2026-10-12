@@ -1,22 +1,10 @@
+ZERO DAY — NEO-HAVEN verification, October 12, 2026
 
-> zero-day@1.0.0 test
-> node --import tsx --test tests/*.test.ts
+npm run build: PASS (TypeScript + Vite production build)
+npm test: PASS — 28 tests, 0 failures
+Independent Chrome contexts: PASS — travel, repair, private reactor instructions, chat coordination, switch submission, synchronized success, discussion/vote, reveal, replay
+Mobile: PASS — 390px viewport, no horizontal page overflow
 
-✔ exactly one Mole and personalized state hides allegiance (1.270772ms)
-✔ cooldowns, role validation, shielding and node bounds (0.442126ms)
-✔ infection pulse is shared and shield excludes propagation (0.39271ms)
-✔ correct majority wins and reveals all roles (0.354133ms)
-✔ wrong vote penalizes, pauses mission and permits continuing (0.192419ms)
-✔ clean stabilization and collapse produce opposite victories (0.181853ms)
-✔ independent rooms and fresh rounds do not share state (0.197047ms)
-✔ Sniffer reports privately, suspicious flags stay off the public map (0.246932ms)
-✔ meeting timeout, skips and mission deadline resolve authoritatively (0.225389ms)
-✔ live server: 3 clients, isolation, role privacy, actions, voting, replay, reconnect (10723.101173ms)
-ℹ tests 10
-ℹ suites 0
-ℹ pass 10
-ℹ fail 0
-ℹ cancelled 0
-ℹ skipped 0
-ℹ todo 0
-ℹ duration_ms 10974.252708
+Public deployment and physical-device internet play: NOT PERFORMED
+Human balance/fun testing: NOT PERFORMED
+See VERIFICATION.md for coverage and reproducible browser tooling.

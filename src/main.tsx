@@ -5,7 +5,8 @@ import "./style.css";
 import { City } from "./City";
 import { buildings } from "../shared/city";
 import { Interior, Chat } from "./Interior";
-const socket = io();
+import { Reactor, Evidence, HowToPlay } from "./Reactor";
+const socket = io({ autoConnect: false });
 function App() {
   const [r, setR] = useState<any>(null),
     [name, setName] = useState(""),
@@ -20,11 +21,11 @@ function App() {
   useEffect(() => {
     const t = setTimeout(() => setBoot(false), 1500);
     const clock = setInterval(() => setNow(Date.now()), 40);
-    socket.on("state", (state: any) => {
+    const onState = (state: any) => {
       setOffset(state.serverNow - Date.now());
       setR(state);
-    });
-    socket.on("connect", () => {
+    };
+    const onConnect = () => {
       setConnected(true);
       const token = sessionStorage.getItem("zero-token");
       if (token)
@@ -34,15 +35,24 @@ function App() {
             setR(null);
           }
         });
-    });
-    socket.on("disconnect", () => setConnected(false));
+    };
+    const onDisconnect = () => setConnected(false);
+    socket.on("state", onState);
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.connect();
     return () => {
       clearTimeout(t);
       clearInterval(clock);
+      socket.off("state", onState);
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.disconnect();
     };
   }, []);
   function cmd(kind: string, extra: any = {}) {
     setError("");
+    if (kind === "travel") setSelected(extra.node);
     socket
       .timeout(5000)
       .emit("command", { kind, ...extra }, (err: any, v: any) => {
@@ -158,6 +168,7 @@ function App() {
             >
               JOIN OPERATION →
             </button>
+            <HowToPlay />
             <div className="brief">
               <b>MISSION BRIEF</b>
               <p>
@@ -186,6 +197,7 @@ function App() {
               <small>MISSION CLOCK</small>
             </div>
           </div>
+          <HowToPlay />
           {r.phase === "lobby" ? (
             <div className="lobby-layout">
               <section className="panel lobby">
@@ -269,6 +281,8 @@ function App() {
             </div>
           ) : (
             <>
+              <Reactor r={r} now={serverTime} cmd={cmd} />
+              {r.reactor?.status === "active" && <Chat r={r} cmd={cmd} />}
               <div className="game-grid">
                 <section className="map panel">
                   <div className="map-header">
@@ -368,6 +382,7 @@ function App() {
                     now={cityTime}
                     cmd={cmd}
                   />
+                  <Evidence r={r} />
                   <section className="panel feed">
                     <div className="eyebrow">SECURITY EVENT STREAM</div>
                     {r.events.slice(0, 7).map((v: string, i: number) => (
@@ -379,18 +394,18 @@ function App() {
                   </section>
                 </aside>
               </div>
-              <Chat r={r} cmd={cmd} />
+              {r.reactor?.status !== "active" && <Chat r={r} cmd={cmd} />}
               <div className="team-strip">
                 {r.players.map((p: any) => (
                   <span key={p.id}>
                     <i className={p.connected ? "online" : ""} />
-                    {p.name}
+                    <b style={{ color: p.color }}>{p.name}</b>
                     <small>
                       {p.spectator
                         ? "SPECTATOR"
                         : p.travel
-                          ? "IN TRANSIT"
-                          : buildings[p.location]?.name}
+                          ? `→ ${buildings[p.travel.path.at(-1)]?.name}`
+                          : `${buildings[p.location]?.name}${p.working ? " / WORKING" : " / INSIDE"}`}
                     </small>
                   </span>
                 ))}
@@ -408,16 +423,25 @@ function App() {
                   {r.meeting.caller} called an emergency meeting. Compare access
                   histories in team chat, then select your suspect.
                 </p>
+                <Evidence r={r} />
                 <Chat r={r} cmd={cmd} />
                 <div className="vote-clock">
                   {Math.max(0, Math.ceil((r.meeting.ends - serverTime) / 1000))}
                   s
                 </div>
+                {serverTime < r.meeting.votingAt && (
+                  <p className="gold">
+                    DISCUSSION / Voting opens in{" "}
+                    {Math.ceil((r.meeting.votingAt - serverTime) / 1000)}s.
+                    Share your evidence.
+                  </p>
+                )}
                 {r.players
                   .filter((p: any) => r.meeting.eligible.includes(p.id))
                   .map((p: any) => (
                     <button
                       disabled={
+                        serverTime < r.meeting.votingAt ||
                         !r.meeting.eligible.includes(r.me.id) ||
                         r.meeting.voted.includes(r.me.id)
                       }
@@ -430,6 +454,7 @@ function App() {
                   ))}
                 <button
                   disabled={
+                    serverTime < r.meeting.votingAt ||
                     !r.meeting.eligible.includes(r.me.id) ||
                     r.meeting.voted.includes(r.me.id)
                   }

@@ -6,6 +6,7 @@ import {
   create,
   player,
   start,
+  resetLobby,
   view,
   action,
   meeting,
@@ -17,6 +18,7 @@ import {
   chat,
   type Room,
 } from "./game.js";
+import { reactorAccess, reactorInput, reactorOverride } from "./reactor.js";
 const app = express(),
   http = createServer(app),
   io = new Server(http, { maxHttpBufferSize: 10000 });
@@ -32,11 +34,15 @@ function emit(r: Room) {
       s.emit("state", view(r, socketPlayer.get(s.id)!));
 }
 io.on("connection", (s) => {
-  let last = 0;
+  let last = Date.now(),
+    allowance = 8;
   s.on("command", (data: any, ack: any) => {
     try {
-      if (Date.now() - last < 100) throw Error("Slow down.");
-      last = Date.now();
+      const received = Date.now();
+      allowance = Math.min(8, allowance + (received - last) * 0.008);
+      last = received;
+      if (allowance < 1) throw Error("Too many commands. Wait a moment.");
+      allowance -= 1;
       if (!data || typeof data !== "object") throw Error("Invalid request.");
       const { kind } = data;
       if (["create", "join", "resume"].includes(kind)) {
@@ -96,18 +102,24 @@ io.on("connection", (s) => {
         start(r);
       } else if (kind === "replay") {
         if (r.host !== p.id || r.phase !== "ended") throw Error("Host only.");
-        r.phase = "lobby";
-        r.nodes = [];
-        r.meeting = null;
-        r.players.forEach((x) => {
-          x.mole = false;
-          x.role = "";
-        });
+        resetLobby(r);
       } else if (kind === "travel") travel(r, p, Number(data.node));
       else if (kind === "begin")
         begin(r, p, String(data.ability), Number(data.node));
       else if (kind === "step")
         taskStep(r, p, String(data.task), Number(data.cell));
+      else if (kind === "reactor-access")
+        reactorAccess(r, p, String(data.crisis));
+      else if (kind === "reactor-input")
+        reactorInput(
+          r,
+          p,
+          String(data.crisis),
+          Number(data.index),
+          Number(data.value),
+        );
+      else if (kind === "reactor-override")
+        reactorOverride(r, p, String(data.crisis));
       else if (kind === "chat") chat(r, p, String(data.text || ""));
       else if (kind === "meeting") meeting(r, p);
       else if (kind === "vote") vote(r, p, String(data.target));

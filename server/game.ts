@@ -1,5 +1,6 @@
 import { randomInt, randomBytes } from "node:crypto";
 import { buildings, edges, route, routeLength } from "../shared/city.js";
+import { reactorView, tickReactor, type Reactor } from "./reactor.js";
 export { edges };
 export const roles = ["PATCHER", "FIREWALL", "SNIFFER"];
 type Travel = { path: number[]; started: number; arrives: number };
@@ -28,6 +29,8 @@ export type Player = {
   spectator: boolean;
   chatNext: number;
   corruptNext: number;
+  evidence?: { node: number; capturedAt: number; entries: RecordEntry[] };
+  feedback?: { text: string; at: number };
 };
 type Node = {
   id: number;
@@ -54,9 +57,12 @@ export type Room = {
   cleanAt: number;
   spreadAt: number;
   threats: Threat[];
+  reactor: Reactor | null;
+  reactorAt: number;
   meeting: null | {
     caller: string;
     ends: number;
+    votingAt: number;
     started: number;
     votes: Record<string, string>;
     eligible: string[];
@@ -76,6 +82,11 @@ export function player(id: string, name: string): Player {
     spectator: false,
     chatNext: 0,
     corruptNext: 0,
+    travel: undefined,
+    task: undefined,
+    scan: undefined,
+    evidence: undefined,
+    feedback: undefined,
   };
 }
 export function create(code: string, id: string, name: string): Room {
@@ -94,6 +105,8 @@ export function create(code: string, id: string, name: string): Room {
     cleanAt: 0,
     spreadAt: 0,
     threats: [],
+    reactor: null,
+    reactorAt: 0,
     meeting: null,
   };
 }
@@ -101,7 +114,13 @@ export function event(r: Room, s: string) {
   r.events.unshift(s);
   r.events = r.events.slice(0, 30);
 }
-function record(r: Room, p: Player, node: number, kind: string, now: number) {
+export function record(
+  r: Room,
+  p: Player,
+  node: number,
+  kind: string,
+  now: number,
+) {
   r.history.push({ at: now, player: p.name, node, kind });
   r.history = r.history.slice(-300);
 }
@@ -119,6 +138,18 @@ export function finish(r: Room, w: string) {
   r.winner = w;
   r.meeting = null;
   event(r, w === "DEFENDERS" ? "THREAT NEUTRALIZED" : "MAINFRAME LOST");
+}
+export function resetLobby(r: Room) {
+  if (r.phase !== "ended") throw Error("Finish the current round first.");
+  r.phase = "lobby";
+  r.nodes = [];
+  r.meeting = null;
+  r.reactor = null;
+  r.reactorAt = 0;
+  r.threats = [];
+  r.players.forEach((p) =>
+    Object.assign(p, player(p.id, p.name), { connected: p.connected }),
+  );
 }
 export function start(r: Room, now = Date.now()) {
   if (r.phase !== "lobby") throw Error("Round already active.");
@@ -147,6 +178,8 @@ export function start(r: Room, now = Date.now()) {
     secureAt: now + 300000,
     cleanAt: 0,
     spreadAt: now + 12000,
+    reactor: null,
+    reactorAt: now + 15000,
     threats: [],
     meeting: null,
     winner: undefined,
@@ -180,6 +213,7 @@ export function view(r: Room, id: string, now = Date.now()) {
           (t) => !r.nodes[4]?.infected || t.arrives - now <= 2500,
         ),
     intelOffline: !!r.nodes[2]?.infected,
+    reactor: reactorView(r, me, now),
     players: r.players.map((p) => ({
       id: p.id,
       name: p.name,
@@ -187,12 +221,30 @@ export function view(r: Room, id: string, now = Date.now()) {
       spectator: p.spectator,
       location: p.location,
       travel: p.travel,
+      color: [
+        "#69dfff",
+        "#ffd17c",
+        "#c09aff",
+        "#6bf0c7",
+        "#90b4ff",
+        "#ff91bb",
+        "#edfeac",
+        "#ffffff",
+      ][r.players.indexOf(p)],
+      working:
+        !p.travel &&
+        ((!!p.task && p.task.expires > now) ||
+          (r.reactor?.status === "active" &&
+            ((r.reactor.fieldId === p.id && p.location === 1) ||
+              (r.reactor.remoteId === p.id && [2, 4].includes(p.location)) ||
+              r.reactor.overrideBy === p.id))),
       ...(r.phase === "ended" ? { role: p.role, mole: p.mole } : {}),
     })),
     me: me ? { ...me } : null,
     meeting: r.meeting
       ? {
           ends: r.meeting.ends,
+          votingAt: r.meeting.votingAt,
           caller: r.meeting.caller,
           voted: Object.keys(r.meeting.votes),
           eligible: r.meeting.eligible,
@@ -213,6 +265,11 @@ export function travel(r: Room, p: Player, node: number, now = Date.now()) {
     arrives: now + Math.min(5000, Math.max(2000, routeLength(path) * 7)),
   };
   p.task = undefined;
+  if (r.reactor?.overrideBy === p.id) {
+    r.reactor.overrideBy = undefined;
+    r.reactor.overrideEnds = undefined;
+    record(r, p, p.location, "interrupted emergency override", now);
+  }
   record(r, p, p.location, `departed for ${r.nodes[node].name}`, now);
 }
 function positioned(r: Room, p: Player, node: number, now: number) {
@@ -241,6 +298,9 @@ export function begin(
     throw Error("Unauthorized ability.");
   if (kind === "sabotage" && p.corruptNext > now)
     throw Error("Corrupt ability cooling down.");
+  if (r.reactor?.overrideBy === p.id && r.reactor.overrideEnds)
+    throw Error("Hold the override or leave the building to cancel it.");
+  record(r, p, node, "maintenance terminal accessed", now);
   const mode = node % 2 === 0 ? "isolate" : "circuit";
   const sequence: number[] = [];
   while (sequence.length < 3) {
@@ -305,6 +365,10 @@ export function action(
     n.corruptBy = p.name;
     p.corruptNext = now + 30000;
     p.next = now + 6500;
+    p.feedback = {
+      text: `Covert corruption planted at ${n.name}. Failure in 10 seconds.`,
+      at: now,
+    };
     record(r, p, node, "service operation", now);
     event(r, `${p.name} serviced ${n.name}.`);
   } else if (kind === "repair") {
@@ -325,7 +389,12 @@ export function action(
   } else if (kind === "scan" && p.role === "SNIFFER") {
     const entries = r.history
       .filter((e) => e.node === node && now - e.at <= 90000)
-      .slice(-7);
+      .slice(r.nodes[4].infected ? -4 : -12);
+    p.evidence = {
+      node,
+      capturedAt: now,
+      entries: entries.map((e) => ({ ...e })),
+    };
     p.scan =
       `${n.name} / LAST 90s: ` +
       (entries
@@ -359,6 +428,7 @@ export function meeting(r: Room, p: Player, now = Date.now()) {
   r.meeting = {
     caller: p.name,
     ends: now + 35000,
+    votingAt: now + 8000,
     started: now,
     votes: {},
     eligible: r.players
@@ -367,10 +437,11 @@ export function meeting(r: Room, p: Player, now = Date.now()) {
   };
   event(r, "EMERGENCY // City clock paused. Compare access histories.");
 }
-export function vote(r: Room, p: Player, target: string) {
+export function vote(r: Room, p: Player, target: string, now = Date.now()) {
   if (
     r.phase !== "meeting" ||
     !r.meeting ||
+    now < r.meeting.votingAt ||
     !r.meeting.eligible.includes(p.id) ||
     !p.connected ||
     r.meeting.votes[p.id]
@@ -401,6 +472,12 @@ export function tick(r: Room, now = Date.now()) {
       r.endAt += pause;
       r.secureAt += pause;
       r.spreadAt += pause;
+      r.reactorAt += pause;
+      if (r.reactor?.status === "active") {
+        r.reactor.started += pause;
+        r.reactor.ends += pause;
+        if (r.reactor.overrideEnds) r.reactor.overrideEnds += pause;
+      }
       if (r.cleanAt) r.cleanAt += pause;
       r.threats.forEach((t) => {
         t.started += pause;
@@ -436,6 +513,7 @@ export function tick(r: Room, now = Date.now()) {
       record(r, p, p.location, "arrived", now);
     }
   });
+  tickReactor(r, now);
   r.nodes.forEach((n) => {
     if (n.corruptAt && n.corruptAt <= now) {
       n.corruptAt = 0;
@@ -462,6 +540,13 @@ export function tick(r: Room, now = Date.now()) {
     if (n.shield <= now) {
       n.infected = true;
       event(r, `Incoming packet breached ${n.name}.`);
+      record(
+        r,
+        { name: "SYSTEM" } as Player,
+        n.id,
+        "incoming packet compromised building",
+        now,
+      );
     } else event(r, `Shield intercepted attack at ${n.name}.`);
     return false;
   });
@@ -489,7 +574,12 @@ export function tick(r: Room, now = Date.now()) {
       r.threats.push({ ...target, started: now, arrives: now + 6500 });
     }
   }
+  if (r.core === 0 || now >= r.endAt) {
+    finish(r, "MOLE");
+    return;
+  }
   if (
+    r.reactor?.status !== "active" &&
     now >= r.secureAt &&
     !r.nodes.some((n) => n.infected || n.corruptAt) &&
     !r.threats.length

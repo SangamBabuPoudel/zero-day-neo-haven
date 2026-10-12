@@ -243,14 +243,34 @@ export function City({
                   (p.travel.arrives - p.travel.started),
               )
             : buildings[p.location];
-          const offset = ((i % 3) - 1) * 25;
+          const progress = p.travel
+            ? Math.max(
+                0,
+                Math.min(
+                  1,
+                  (now - p.travel.started) /
+                    (p.travel.arrives - p.travel.started),
+                ),
+              )
+            : 0;
+          const spread = p.travel
+            ? 1 - Math.min(1, progress * 8, (1 - progress) * 8)
+            : 1;
+          const offset = ((i % 3) - 1) * 55 * spread;
           return (
             <g
               key={p.id}
               className={`agent ${p.id === room.me.id ? "own-agent" : ""} ${p.travel && !paused ? "walking" : ""}`}
-              transform={`translate(${pos.x + offset} ${pos.y + 21 + Math.floor(i / 3) * 16})`}
+              transform={`translate(${pos.x + offset} ${pos.y + (21 + Math.floor(i / 3) * 40) * spread})`}
               opacity={p.connected ? 1 : 0.35}
             >
+              <title>
+                {p.name} /{" "}
+                {p.travel
+                  ? `travelling to ${buildings[p.travel.path.at(-1)].name}`
+                  : buildings[p.location].name}
+                {p.working ? " / working" : ""}
+              </title>
               <ellipse cx="0" cy="10" rx="10" ry="4" fill="#000" />
               <path
                 d="M-6 8 V-3 Q0 -9 6 -3 V8 M-3 8 v6 M3 8 v6"
@@ -261,8 +281,8 @@ export function City({
               <circle cx="0" cy="-11" r="5" style={{ fill: colors[i % 8] }} />
               <path d="M-4 -11 h8" stroke="#0a1b25" strokeWidth="3" />
               <text className="agent-name" x="0" y="-27" textAnchor="middle">
-                {p.name}
-                {p.id === room.me.id ? " / YOU" : ""}
+                {p.name.length > 10 ? p.name.slice(0, 9) + "…" : p.name}
+                {p.working ? " ⚙" : ""}
               </text>
             </g>
           );

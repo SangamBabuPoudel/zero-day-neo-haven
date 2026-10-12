@@ -122,6 +122,7 @@ test(
         (await send(b, "chat", { text: "Compare access logs before voting." }))
           .ok,
       );
+      await delay(8100);
       const mole = all.find((v) => v.box.state.me.mole)!;
       for (const v of all)
         assert((await send(v, "vote", { target: mole.box.state.me.id })).ok);

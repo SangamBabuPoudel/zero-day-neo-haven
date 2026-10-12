@@ -125,7 +125,11 @@ export function Interior({
           )}
         </>
       )}
-      {p.scan && <p className="scan-result">{p.scan}</p>}
+      {p.feedback && (
+        <p className="scan-result" role="status">
+          {p.feedback.text}
+        </p>
+      )}
       <button
         className="meeting-button"
         disabled={r.phase !== "playing" || p.spectator || p.meetingNext > now}
@@ -161,6 +165,19 @@ export function Chat({
           <p>
             Who was near that building before it failed? Share evidence here.
           </p>
+        )}
+      </div>
+      <div className="quick-chat">
+        {["GO TO POWER!", "I HAVE THE SEQUENCE!", "CHECK THE ACCESS LOGS!"].map(
+          (text) => (
+            <button
+              key={text}
+              disabled={r.me.spectator && r.phase !== "lobby"}
+              onClick={() => cmd("chat", { text })}
+            >
+              {text}
+            </button>
+          ),
         )}
       </div>
       <form
